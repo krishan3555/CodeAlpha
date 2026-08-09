@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Chatbot</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #e0eafc, #cfdef3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+  }
+
+  .chat-container {
+    width: 450px;
+    max-width: 95%;
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    max-height: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .message {
+    display: flex;
+    align-items: flex-start;
+    opacity: 0;
+    transform: translateY(10px);
+    animation: fadeIn 0.3s forwards;
+  }
+
+  .message .bubble {
+    padding: 10px 15px;
+    border-radius: 15px;
+    max-width: 75%;
+    word-wrap: break-word;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .user {
+    justify-content: flex-end;
+  }
+  .user .bubble {
+    background: #007bff;
+    color: #fff;
+    border-bottom-right-radius: 0;
+  }
+
+  .ai {
+    justify-content: flex-start;
+  }
+  .ai .bubble {
+    background: #f1f0f0;
+    color: #000;
+    border-bottom-left-radius: 0;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    margin-right: 8px;
+    margin-left: 8px;
+    flex-shrink: 0;
+  }
+
+  .user .avatar {
+    margin-left: 0;
+    margin-right: 8px;
+  }
+
+  .input-area {
+    display: flex;
+    border-top: 1px solid #ddd;
+  }
+  .input-area input {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    outline: none;
+    font-size: 16px;
+  }
+  .input-area button {
+    padding: 12px 20px;
+    border: none;
+    background: #007bff;
+    color: #fff;
+    cursor: pointer;
+    font-weight: bold;
+  }
+
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="messages" id="messages"></div>
+  <div class="input-area">
+    <input type="text" id="userInput" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+const messagesEl = document.getElementById('messages');
+const inputEl = document.getElementById('userInput');
+
+function typeText(element, text, speed = 10) {
+  element.textContent = '';
+  let i = 0;
+  const interval = setInterval(() => {
+    element.textContent += text[i];
+    i++;
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    if (i >= text.length) clearInterval(interval);
+  }, speed);
+}
+
+async function sendMessage() {
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  // User message
+  const userDiv = document.createElement('div');
+  userDiv.classList.add('message', 'user');
+  userDiv.innerHTML = `<div class="bubble">${text}</div><img class="avatar" src="download (1).jpeg" alt="user">`;
+  messagesEl.appendChild(userDiv);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+  inputEl.value = '';
+
+  // AI typing
+  const aiDiv = document.createElement('div');
+  aiDiv.classList.add('message', 'ai');
+  aiDiv.innerHTML = `<img class="avatar" src="download.jpeg" alt="ai"><div class="bubble">...</div>`;
+  messagesEl.appendChild(aiDiv);
+  messagesEl.scrollTop = messagesEl.scrollHeight;
+
+  try {
+    const response = await fetch('http://localhost:3000/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+
+    const data = await response.json();
+    const reply = data.reply || '⚠️ No response from AI';
+    const bubble = aiDiv.querySelector('.bubble');
+    typeText(bubble, reply);
+
+  } catch (err) {
+    const bubble = aiDiv.querySelector('.bubble');
+    bubble.textContent = '❌ Error connecting to server';
+    console.error(err);
+  }
+}
+
+inputEl.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') sendMessage();
+});
+</script>
+
+</body>
+</html>
